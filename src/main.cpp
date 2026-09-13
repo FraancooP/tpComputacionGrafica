@@ -177,6 +177,8 @@ int main()
 
         const float largoNariz = L / 5.0f;
         const float radioNariz = L / 10.0f;
+        const float largoFuselaje = L;
+        const float radioFuselaje = radioNariz;
 
         // Con radio 1 y apertura de 90 grados,
         // el cono generado tiene altura 1.
@@ -188,12 +190,23 @@ int main()
         Mesh nariz;
         nariz.load(datosNariz);
 
+        const MeshData datosFuselaje = primitives::cylinder(
+            1.0f,
+            1.0f,
+            32U);
+
+        Mesh fuselaje;
+        fuselaje.load(datosFuselaje);
+
         const int ubicacionModelo = shader.loc("uModel");
         const int ubicacionAjuste = shader.loc("uAjuste");
         const int ubicacionColor = shader.loc("uColor");
 
         // Transformacion de la nariz dentro del avion.
         glm::mat4 localNariz = glm::mat4(1.0f);
+        glm::mat4 localFuselaje = glm::mat4(1.0f);
+
+        // NARIZ
 
         localNariz = glm::translate(
             localNariz,
@@ -207,6 +220,21 @@ int main()
         localNariz = glm::scale(
             localNariz,
             glm::vec3(radioNariz, largoNariz, radioNariz));
+
+        // FUSELAJE
+        // Ubicamos el cilindro al centro
+        localFuselaje = glm::translate(
+            localFuselaje,
+            glm::vec3(0.0f, 0.0f, largoNariz + largoFuselaje * 0.5f));
+
+        localFuselaje = glm::rotate(
+            localFuselaje,
+            glm::radians(-90.0f),
+            glm::vec3(1.0f, 0.0f, 0.0f));
+
+        localFuselaje = glm::scale(
+            localFuselaje,
+            glm::vec3(radioFuselaje, largoFuselaje, radioFuselaje));
 
         // Orientacion del conjunto para observarlo de costado.
         // No forma parte de las medidas ni del armado de la nariz.
@@ -415,7 +443,7 @@ int main()
             // Presentamos la imagen cuando terminamos las tres piezas.
             glfwSwapBuffers(ventana);
             */
-           //ESTO ES AVION===================================================================================
+            // ESTO ES AVION===================================================================================
             glClear(
                 GL_COLOR_BUFFER_BIT |
                 GL_DEPTH_BUFFER_BIT);
@@ -435,6 +463,23 @@ int main()
             glDrawElements(
                 GL_TRIANGLES,
                 nariz.count(),
+                GL_UNSIGNED_INT,
+                nullptr);
+
+            // Fuselaje.
+            shader.set_uniform(
+                ubicacionModelo,
+                presentacion * localFuselaje);
+
+            shader.set_uniform(
+                ubicacionColor,
+                glm::vec3(0.7f, 0.75f, 0.8f));
+
+            glBindVertexArray(fuselaje.vao());
+
+            glDrawElements(
+                GL_TRIANGLES,
+                fuselaje.count(),
                 GL_UNSIGNED_INT,
                 nullptr);
 

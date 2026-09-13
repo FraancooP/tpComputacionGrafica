@@ -61,7 +61,7 @@ GLuint crearPrograma(const ShaderSource &fuentes)
 {
     GLuint vertexShader = compilarShader(
         GL_VERTEX_SHADER,
-        fuentes.fs.c_str());
+        fuentes.vs.c_str());
 
     if (vertexShader == 0)
     {

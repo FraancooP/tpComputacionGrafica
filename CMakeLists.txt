@@ -44,6 +44,7 @@ add_executable(cgyav
     src/main.cpp
     src/ResourceManager.cpp
     src/Shader.cpp
+    src/Mesh.cpp
 )
 
 target_link_libraries(cgyav PRIVATE

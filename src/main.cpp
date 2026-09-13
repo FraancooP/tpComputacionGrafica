@@ -9,7 +9,7 @@
 
 // Se ejecuta una vez por vertice.
 const char* vertexShaderSource = R"glsl(
-#version 460 core
+#version 450 core
 
 layout (location = 0) in vec3 aPos;
 
@@ -164,7 +164,7 @@ int main()
 
     // Misma version que las filminas.
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     GLFWwindow* ventana = glfwCreateWindow(
@@ -184,9 +184,9 @@ int main()
     glfwMakeContextCurrent(ventana);
 
     // 2. Cargar las funciones OpenGL mediante GLAD.
-    if (!gladLoadGL(glfwGetProcAddress) || !GLAD_GL_VERSION_4_6)
+    if (!gladLoadGL(glfwGetProcAddress) || !GLAD_GL_VERSION_4_5)
     {
-        std::cerr << "No se pudo cargar OpenGL 4.6.\n";
+        std::cerr << "No se pudo cargar OpenGL 4.5.\n";
 
         glfwDestroyWindow(ventana);
         glfwTerminate();

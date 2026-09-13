@@ -2,6 +2,19 @@
 setlocal
 
 cd /d "%~dp0"
+rem Si la terminal ya tiene las herramientas, usarlas directamente.
+where cl.exe >nul 2>nul
+if errorlevel 1 goto buscar_herramientas
+
+where nmake.exe >nul 2>nul
+if errorlevel 1 goto buscar_herramientas
+
+where cmake.exe >nul 2>nul
+if errorlevel 1 goto buscar_herramientas
+
+goto compilar
+
+:buscar_herramientas
 
 rem Buscar las herramientas de Visual Studio.
 set "VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
@@ -25,6 +38,7 @@ if exist "%VSROOT%\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.
 where cmake >nul 2>nul
 if errorlevel 1 goto sin_cmake
 
+:compilar
 rem Configurar y compilar.
 cmake -S . -B build-windows -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Debug
 if errorlevel 1 goto error

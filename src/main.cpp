@@ -102,8 +102,13 @@ int main()
         // datos.indices = {
         //     0, 1, 2};
 
-        MeshData datos = primitives::cube();
+        // Crea un cubo.
+        // MeshData datos = primitives::cube();
 
+        MeshData datos = primitives::cylinder(
+            0.5f,
+            1.0f,
+            8U);
         Mesh malla;
         malla.load(datos);
 

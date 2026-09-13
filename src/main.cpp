@@ -644,6 +644,8 @@ int main()
 
 
             // COLA
+
+            glBindVertexArray(nariz.vao());
             
             shader.set_uniform(
                 ubicacionModelo,
@@ -655,7 +657,7 @@ int main()
 
             glDrawElements(
                 GL_TRIANGLES,
-                mallaAla.count(),
+                nariz.count(),
                 GL_UNSIGNED_INT,
                 nullptr);
 

@@ -196,3 +196,21 @@ void Shader::set_uniform(
         GL_FALSE,
         glm::value_ptr(matriz));
 }
+
+void Shader::set_uniform(
+    const std::string &nombre,
+    const glm::vec3 &vector) const
+{
+    set_uniform(loc(nombre), vector);
+}
+
+void Shader::set_uniform(
+    int ubicacion,
+    const glm::vec3 &vector) const
+{
+    glProgramUniform3fv(
+        id_,
+        ubicacion,
+        1,
+        glm::value_ptr(vector));
+}

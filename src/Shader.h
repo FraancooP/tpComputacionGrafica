@@ -39,12 +39,20 @@ public:
 
     // Libera el programa. Se puede llamar varias veces.
     void clear();
-        
+
     // Devuelve el ID del programa.
     unsigned int id() const
     {
         return id_;
     }
+
+    void set_uniform(
+        const std::string &nombre,
+        const glm::vec3 &vector) const;
+
+    void set_uniform(
+        int ubicacion,
+        const glm::vec3 &vector) const;
 
 private:
     unsigned int id_ = 0;

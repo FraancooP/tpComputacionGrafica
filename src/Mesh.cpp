@@ -11,7 +11,7 @@ Mesh::~Mesh()
     clear();
 }
 
-Mesh::Mesh(Mesh&& other) noexcept
+Mesh::Mesh(Mesh &&other) noexcept
     : vao_(std::exchange(other.vao_, 0U)),
       vbo_(std::exchange(other.vbo_, 0U)),
       ebo_(std::exchange(other.ebo_, 0U)),
@@ -19,7 +19,7 @@ Mesh::Mesh(Mesh&& other) noexcept
 {
 }
 
-Mesh& Mesh::operator=(Mesh&& other) noexcept
+Mesh &Mesh::operator=(Mesh &&other) noexcept
 {
     if (this != &other)
     {
@@ -34,13 +34,12 @@ Mesh& Mesh::operator=(Mesh&& other) noexcept
     return *this;
 }
 
-void Mesh::load(const MeshData& data)
+void Mesh::load(const MeshData &data)
 {
     if (data.vertices.empty() || data.indices.empty())
     {
         throw std::invalid_argument(
-            "La malla necesita vertices e indices."
-        );
+            "La malla necesita vertices e indices.");
     }
 
     clear();
@@ -53,21 +52,17 @@ void Mesh::load(const MeshData& data)
     glNamedBufferData(
         vbo_,
         static_cast<GLsizeiptr>(
-            data.vertices.size() * sizeof(Vertex)
-        ),
+            data.vertices.size() * sizeof(Vertex)),
         data.vertices.data(),
-        GL_STATIC_DRAW
-    );
+        GL_STATIC_DRAW);
 
     // Copiamos los indices.
     glNamedBufferData(
         ebo_,
         static_cast<GLsizeiptr>(
-            data.indices.size() * sizeof(unsigned int)
-        ),
+            data.indices.size() * sizeof(unsigned int)),
         data.indices.data(),
-        GL_STATIC_DRAW
-    );
+        GL_STATIC_DRAW);
 
     // Conectamos el VBO a la ranura 0 del VAO.
     glVertexArrayVertexBuffer(
@@ -75,8 +70,7 @@ void Mesh::load(const MeshData& data)
         0,
         vbo_,
         0,
-        static_cast<GLsizei>(sizeof(Vertex))
-    );
+        static_cast<GLsizei>(sizeof(Vertex)));
 
     // Atributo 0: posicion.
     glVertexArrayAttribFormat(
@@ -85,24 +79,34 @@ void Mesh::load(const MeshData& data)
         3,
         GL_FLOAT,
         GL_FALSE,
-        static_cast<GLuint>(offsetof(Vertex, px))
-    );
+        static_cast<GLuint>(offsetof(Vertex, position)));
 
     glVertexArrayAttribBinding(vao_, 0, 0);
     glEnableVertexArrayAttrib(vao_, 0);
 
-    // Atributo 1: color.
+    // Atributo 1: normal.
     glVertexArrayAttribFormat(
         vao_,
         1,
         3,
         GL_FLOAT,
         GL_FALSE,
-        static_cast<GLuint>(offsetof(Vertex, r))
-    );
+        static_cast<GLuint>(offsetof(Vertex, normal)));
 
     glVertexArrayAttribBinding(vao_, 1, 0);
     glEnableVertexArrayAttrib(vao_, 1);
+
+    // Atributo 2: coordenadas de textura.
+    glVertexArrayAttribFormat(
+        vao_,
+        2,
+        2,
+        GL_FLOAT,
+        GL_FALSE,
+        static_cast<GLuint>(offsetof(Vertex, tex_coords)));
+
+    glVertexArrayAttribBinding(vao_, 2, 0);
+    glEnableVertexArrayAttrib(vao_, 2);
 
     // El EBO tiene una conexion dedicada en el VAO.
     glVertexArrayElementBuffer(vao_, ebo_);

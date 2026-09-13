@@ -15,56 +15,50 @@ namespace primitives
         const float z = scale_z * 0.5f;
 
         datos.vertices = {
-            // Cara frontal: +Z. Rojo.
-            // Vertices 0 a 3.
-            {-x, -y,  z,    1.0f, 0.0f, 0.0f},
-            { x, -y,  z,    1.0f, 0.0f, 0.0f},
-            { x,  y,  z,    1.0f, 0.0f, 0.0f},
-            {-x,  y,  z,    1.0f, 0.0f, 0.0f},
+            // Cara frontal: normal +Z.
+            {{-x, -y,  z}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
+            {{ x, -y,  z}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}},
+            {{ x,  y,  z}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+            {{-x,  y,  z}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
 
-            // Cara posterior: -Z. Verde.
-            // Vertices 4 a 7.
-            { x, -y, -z,    0.0f, 1.0f, 0.0f},
-            {-x, -y, -z,    0.0f, 1.0f, 0.0f},
-            {-x,  y, -z,    0.0f, 1.0f, 0.0f},
-            { x,  y, -z,    0.0f, 1.0f, 0.0f},
+            // Cara posterior: normal -Z.
+            {{ x, -y, -z}, {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f}},
+            {{-x, -y, -z}, {0.0f, 0.0f, -1.0f}, {1.0f, 0.0f}},
+            {{-x,  y, -z}, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f}},
+            {{ x,  y, -z}, {0.0f, 0.0f, -1.0f}, {0.0f, 1.0f}},
 
-            // Cara derecha: +X. Azul.
-            // Vertices 8 a 11.
-            { x, -y,  z,    0.0f, 0.0f, 1.0f},
-            { x, -y, -z,    0.0f, 0.0f, 1.0f},
-            { x,  y, -z,    0.0f, 0.0f, 1.0f},
-            { x,  y,  z,    0.0f, 0.0f, 1.0f},
+            // Cara derecha: normal +X.
+            {{ x, -y,  z}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+            {{ x, -y, -z}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+            {{ x,  y, -z}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
+            {{ x,  y,  z}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
 
-            // Cara izquierda: -X. Amarillo.
-            // Vertices 12 a 15.
-            {-x, -y, -z,    1.0f, 1.0f, 0.0f},
-            {-x, -y,  z,    1.0f, 1.0f, 0.0f},
-            {-x,  y,  z,    1.0f, 1.0f, 0.0f},
-            {-x,  y, -z,    1.0f, 1.0f, 0.0f},
+            // Cara izquierda: normal -X.
+            {{-x, -y, -z}, {-1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+            {{-x, -y,  z}, {-1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+            {{-x,  y,  z}, {-1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
+            {{-x,  y, -z}, {-1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
 
-            // Cara superior: +Y. Magenta.
-            // Vertices 16 a 19.
-            {-x,  y,  z,    1.0f, 0.0f, 1.0f},
-            { x,  y,  z,    1.0f, 0.0f, 1.0f},
-            { x,  y, -z,    1.0f, 0.0f, 1.0f},
-            {-x,  y, -z,    1.0f, 0.0f, 1.0f},
+            // Cara superior: normal +Y.
+            {{-x,  y,  z}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+            {{ x,  y,  z}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+            {{ x,  y, -z}, {0.0f, 1.0f, 0.0f}, {1.0f, 1.0f}},
+            {{-x,  y, -z}, {0.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
 
-            // Cara inferior: -Y. Cian.
-            // Vertices 20 a 23.
-            {-x, -y, -z,    0.0f, 1.0f, 1.0f},
-            { x, -y, -z,    0.0f, 1.0f, 1.0f},
-            { x, -y,  z,    0.0f, 1.0f, 1.0f},
-            {-x, -y,  z,    0.0f, 1.0f, 1.0f}
+            // Cara inferior: normal -Y.
+            {{-x, -y, -z}, {0.0f, -1.0f, 0.0f}, {0.0f, 0.0f}},
+            {{ x, -y, -z}, {0.0f, -1.0f, 0.0f}, {1.0f, 0.0f}},
+            {{ x, -y,  z}, {0.0f, -1.0f, 0.0f}, {1.0f, 1.0f}},
+            {{-x, -y,  z}, {0.0f, -1.0f, 0.0f}, {0.0f, 1.0f}}
         };
 
         datos.indices = {
-             0,  1,  2,     0,  2,  3,  // Frontal
-             4,  5,  6,     4,  6,  7,  // Posterior
-             8,  9, 10,     8, 10, 11,  // Derecha
-            12, 13, 14,    12, 14, 15,  // Izquierda
-            16, 17, 18,    16, 18, 19,  // Superior
-            20, 21, 22,    20, 22, 23   // Inferior
+             0,  1,  2,     0,  2,  3,
+             4,  5,  6,     4,  6,  7,
+             8,  9, 10,     8, 10, 11,
+            12, 13, 14,    12, 14, 15,
+            16, 17, 18,    16, 18, 19,
+            20, 21, 22,    20, 22, 23
         };
 
         return datos;

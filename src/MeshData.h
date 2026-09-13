@@ -1,11 +1,14 @@
 #pragma once
 
+#include <glm/glm.hpp>
+
 #include <vector>
 
 struct Vertex
 {
-    float px, py, pz;
-    float r, g, b;
+    glm::vec3 position;
+    glm::vec3 normal;
+    glm::vec2 tex_coords;
 };
 
 struct MeshData

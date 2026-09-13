@@ -117,9 +117,12 @@ int main()
 
         const int ubicacionModelo = shader.loc("uModel");
         const int ubicacionAjuste = shader.loc("uAjuste");
+        const int ubicacionColor = shader.loc("uColor");
 
         // Empezamos con la matriz identidad.
         glm::mat4 modelo = glm::mat4(1.0f);
+
+        // M  = T * Rx * Ry * S
 
         // Posicion del objeto.
         modelo = glm::translate(
@@ -144,6 +147,9 @@ int main()
             glm::vec3(0.6f, 0.6f, 0.6f));
 
         shader.set_uniform(ubicacionModelo, modelo);
+        shader.set_uniform(
+            ubicacionColor,
+            glm::vec3(1.0f, 0.5f, 0.2f));
 
         while (!glfwWindowShouldClose(ventana))
         {

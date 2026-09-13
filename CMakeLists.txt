@@ -43,6 +43,7 @@ target_include_directories(glad PUBLIC
 add_executable(cgyav
     src/main.cpp
     src/ResourceManager.cpp
+    src/Shader.cpp
 )
 
 target_link_libraries(cgyav PRIVATE

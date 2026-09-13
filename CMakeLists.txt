@@ -30,6 +30,16 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(glfw)
 
+# GLM: vectores y matrices para las transformaciones.
+FetchContent_Declare(
+    glm
+    GIT_REPOSITORY https://github.com/g-truc/glm.git
+    GIT_TAG 1.0.3
+    GIT_SHALLOW TRUE
+)
+
+FetchContent_MakeAvailable(glm)
+
 # GLAD: cargador de funciones OpenGL.
 add_library(glad STATIC
     external/glad/src/gl.c
@@ -51,6 +61,7 @@ add_executable(cgyav
 target_link_libraries(cgyav PRIVATE
     glad
     glfw
+    glm::glm
 )
 
 # Advertencias del compilador.

@@ -1,4 +1,6 @@
 #include <glad/gl.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
@@ -113,6 +115,36 @@ int main()
         glEnable(GL_DEPTH_TEST);
         glClearColor(0.10f, 0.12f, 0.16f, 1.0f);
 
+        const int ubicacionModelo = shader.loc("uModel");
+        const int ubicacionAjuste = shader.loc("uAjuste");
+
+        // Empezamos con la matriz identidad.
+        glm::mat4 modelo = glm::mat4(1.0f);
+
+        // Posicion del objeto.
+        modelo = glm::translate(
+            modelo,
+            glm::vec3(0.0f, 0.0f, 0.0f));
+
+        // Orientacion alrededor de X.
+        modelo = glm::rotate(
+            modelo,
+            glm::radians(25.0f),
+            glm::vec3(1.0f, 0.0f, 0.0f));
+
+        // Orientacion alrededor de Y.
+        modelo = glm::rotate(
+            modelo,
+            glm::radians(-35.0f),
+            glm::vec3(0.0f, 1.0f, 0.0f));
+
+        // Escalado del objeto.
+        modelo = glm::scale(
+            modelo,
+            glm::vec3(0.6f, 0.6f, 0.6f));
+
+        shader.set_uniform(ubicacionModelo, modelo);
+
         while (!glfwWindowShouldClose(ventana))
         {
             glfwPollEvents();
@@ -126,7 +158,24 @@ int main()
             int alto = 0;
 
             glfwGetFramebufferSize(ventana, &ancho, &alto);
+
+            // Al minimizar, el framebuffer puede tener dimensiones cero.
+            if (ancho <= 0 || alto <= 0)
+            {
+                continue;
+            }
+
             glViewport(0, 0, ancho, alto);
+
+            const float relacion =
+                static_cast<float>(alto) /
+                static_cast<float>(ancho);
+
+            const glm::mat4 ajuste = glm::scale(
+                glm::mat4(1.0f),
+                glm::vec3(relacion, 1.0f, -1.0f));
+
+            shader.set_uniform(ubicacionAjuste, ajuste);
 
             glClear(
                 GL_COLOR_BUFFER_BIT |

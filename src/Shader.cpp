@@ -1,6 +1,7 @@
 #include "Shader.h"
 
 #include <glad/gl.h>
+#include <glm/gtc/type_ptr.hpp>
 
 #include <iostream>
 #include <utility>
@@ -9,12 +10,11 @@ namespace
 {
     GLuint compilarEtapa(
         GLenum tipo,
-        const std::string& fuente
-    )
+        const std::string &fuente)
     {
         GLuint shader = glCreateShader(tipo);
 
-        const char* texto = fuente.c_str();
+        const char *texto = fuente.c_str();
 
         glShaderSource(shader, 1, &texto, nullptr);
         glCompileShader(shader);
@@ -24,7 +24,7 @@ namespace
 
         if (correcto != GL_TRUE)
         {
-            const char* nombre =
+            const char *nombre =
                 tipo == GL_VERTEX_SHADER ? "vertex" : "fragment";
 
             std::cerr
@@ -39,15 +39,13 @@ namespace
             {
                 std::string log(
                     static_cast<std::size_t>(longitud),
-                    '\0'
-                );
+                    '\0');
 
                 glGetShaderInfoLog(
                     shader,
                     longitud,
                     nullptr,
-                    log.data()
-                );
+                    log.data());
 
                 std::cerr << log << '\n';
             }
@@ -66,12 +64,12 @@ Shader::~Shader()
     clear();
 }
 
-Shader::Shader(Shader&& other) noexcept
+Shader::Shader(Shader &&other) noexcept
     : id_(std::exchange(other.id_, 0U))
 {
 }
 
-Shader& Shader::operator=(Shader&& other) noexcept
+Shader &Shader::operator=(Shader &&other) noexcept
 {
     if (this != &other)
     {
@@ -83,9 +81,8 @@ Shader& Shader::operator=(Shader&& other) noexcept
 }
 
 bool Shader::compile_from_source(
-    const std::string& vs,
-    const std::string& fs
-)
+    const std::string &vs,
+    const std::string &fs)
 {
     clear();
 
@@ -131,15 +128,13 @@ bool Shader::compile_from_source(
         {
             std::string log(
                 static_cast<std::size_t>(longitud),
-                '\0'
-            );
+                '\0');
 
             glGetProgramInfoLog(
                 id_,
                 longitud,
                 nullptr,
-                log.data()
-            );
+                log.data());
 
             std::cerr << log << '\n';
         }
@@ -164,4 +159,40 @@ void Shader::clear()
         glDeleteProgram(id_);
         id_ = 0;
     }
+}
+
+int Shader::loc(const std::string &nombre) const
+{
+    const GLint ubicacion = glGetUniformLocation(
+        id_,
+        nombre.c_str());
+
+    if (ubicacion == -1)
+    {
+        std::cerr
+            << "Uniform no encontrado o no utilizado: "
+            << nombre
+            << '\n';
+    }
+
+    return ubicacion;
+}
+
+void Shader::set_uniform(
+    const std::string &nombre,
+    const glm::mat4 &matriz) const
+{
+    set_uniform(loc(nombre), matriz);
+}
+
+void Shader::set_uniform(
+    int ubicacion,
+    const glm::mat4 &matriz) const
+{
+    glProgramUniformMatrix4fv(
+        id_,
+        ubicacion,
+        1,
+        GL_FALSE,
+        glm::value_ptr(matriz));
 }

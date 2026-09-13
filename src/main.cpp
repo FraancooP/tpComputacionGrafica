@@ -1,5 +1,8 @@
-//Encabezados y shaders--------------------------------------------------------------------------------------
+// Encabezados y shaders--------------------------------------------------------------------------------------
 #include <glad/gl.h>
+#include "ResourceManager.h"
+
+#include <exception>
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
@@ -7,39 +10,15 @@
 #include <iostream>
 #include <string>
 
-// Se ejecuta una vez por vertice.
-const char* vertexShaderSource = R"glsl(
-#version 450 core
+// Compilacion y enlazado de shaders-----------------------------------------------------------------------------------
 
-layout (location = 0) in vec3 aPos;
-
-void main()
-{
-    gl_Position = vec4(aPos, 1.0);
-}
-)glsl";
-
-// Se ejecuta una vez por fragmento.
-const char* fragmentShaderSource = R"glsl(
-#version 450 core
-
-out vec4 FragColor;
-
-void main()
-{
-    FragColor = vec4(1.0, 0.5, 0.2, 1.0);
-}
-)glsl";
-
-//Compilacion y enlazado de shaders-----------------------------------------------------------------------------------
-
-void errorGLFW(int codigo, const char* mensaje)
+void errorGLFW(int codigo, const char *mensaje)
 {
     std::cerr << "Error GLFW " << codigo
               << ": " << mensaje << '\n';
 }
 
-GLuint compilarShader(GLenum tipo, const char* fuente)
+GLuint compilarShader(GLenum tipo, const char *fuente)
 {
     GLuint shader = glCreateShader(tipo);
 
@@ -60,15 +39,13 @@ GLuint compilarShader(GLenum tipo, const char* fuente)
         {
             std::string log(
                 static_cast<std::size_t>(longitud),
-                '\0'
-            );
+                '\0');
 
             glGetShaderInfoLog(
                 shader,
                 longitud,
                 nullptr,
-                log.data()
-            );
+                log.data());
 
             std::cerr << log << '\n';
         }
@@ -80,12 +57,11 @@ GLuint compilarShader(GLenum tipo, const char* fuente)
     return shader;
 }
 
-GLuint crearPrograma()
+GLuint crearPrograma(const ShaderSource &fuentes)
 {
     GLuint vertexShader = compilarShader(
         GL_VERTEX_SHADER,
-        vertexShaderSource
-    );
+        fuentes.fs.c_str());
 
     if (vertexShader == 0)
     {
@@ -94,8 +70,7 @@ GLuint crearPrograma()
 
     GLuint fragmentShader = compilarShader(
         GL_FRAGMENT_SHADER,
-        fragmentShaderSource
-    );
+        fuentes.fs.c_str());
 
     if (fragmentShader == 0)
     {
@@ -131,15 +106,13 @@ GLuint crearPrograma()
         {
             std::string log(
                 static_cast<std::size_t>(longitud),
-                '\0'
-            );
+                '\0');
 
             glGetProgramInfoLog(
                 programa,
                 longitud,
                 nullptr,
-                log.data()
-            );
+                log.data());
 
             std::cerr << log << '\n';
         }
@@ -151,7 +124,7 @@ GLuint crearPrograma()
     return programa;
 }
 
-//Ventana y bucle principal-----------------------------------------------------------------------------------
+// Ventana y bucle principal-----------------------------------------------------------------------------------
 int main()
 {
     // 1. Iniciar GLFW.
@@ -167,13 +140,12 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow* ventana = glfwCreateWindow(
+    GLFWwindow *ventana = glfwCreateWindow(
         800,
         600,
         "Practico 01 - Triangulo",
         nullptr,
-        nullptr
-    );
+        nullptr);
 
     if (ventana == nullptr)
     {
@@ -201,12 +173,48 @@ int main()
     // 3. Decidir los datos: tres posiciones, con X, Y y Z.
     const float vertices[] = {
         -0.5f, -0.5f, 0.0f,
-         0.5f, -0.5f, 0.0f,
-         0.0f,  0.5f, 0.0f
-    };
+        0.5f, -0.5f, 0.0f,
+        0.0f, 0.5f, 0.0f};
 
     // 4. Crear el programa de shaders.
-    GLuint programa = crearPrograma();
+    ResourceManager recursos("assets");
+
+    GLuint programa = 0;
+
+    try
+    {
+        const ShaderSource &fuentes =
+            recursos.load_shader_source(
+                "solid",
+                "shaders/solid.vs",
+                "shaders/solid.fs");
+
+        // Segunda solicitud para comprobar la cache.
+        const ShaderSource &segundaCarga =
+            recursos.load_shader_source(
+                "solid",
+                "shaders/solid.vs",
+                "shaders/solid.fs");
+
+        std::cout
+            << "Se reutilizo el mismo recurso: "
+            << (&fuentes == &segundaCarga ? "si" : "no")
+            << '\n';
+
+        const ShaderSource &guardadas =
+            recursos.get_shader_source("solid");
+
+        programa = crearPrograma(guardadas);
+    }
+    catch (const std::exception &error)
+    {
+        std::cerr << error.what() << '\n';
+
+        glfwDestroyWindow(ventana);
+        glfwTerminate();
+
+        return 1;
+    }
 
     if (programa == 0)
     {
@@ -228,8 +236,7 @@ int main()
         vbo,
         static_cast<GLsizeiptr>(sizeof(vertices)),
         vertices,
-        GL_STATIC_DRAW
-    );
+        GL_STATIC_DRAW);
 
     // Conectar el VBO al punto de enlace 0 del VAO.
     glVertexArrayVertexBuffer(
@@ -237,8 +244,7 @@ int main()
         0,
         vbo,
         0,
-        static_cast<GLsizei>(3 * sizeof(float))
-    );
+        static_cast<GLsizei>(3 * sizeof(float)));
 
     // El atributo 0 contiene tres numeros float: X, Y y Z.
     glVertexArrayAttribFormat(
@@ -247,8 +253,7 @@ int main()
         3,
         GL_FLOAT,
         GL_FALSE,
-        0
-    );
+        0);
 
     // El atributo 0 toma sus datos del punto de enlace 0.
     glVertexArrayAttribBinding(vao, 0, 0);

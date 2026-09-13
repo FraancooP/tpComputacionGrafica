@@ -42,6 +42,7 @@ target_include_directories(glad PUBLIC
 # Nuestro programa.
 add_executable(cgyav
     src/main.cpp
+    src/ResourceManager.cpp
 )
 
 target_link_libraries(cgyav PRIVATE

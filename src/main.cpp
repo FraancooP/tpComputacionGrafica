@@ -90,7 +90,7 @@ int main()
             throw std::runtime_error(
                 "No se pudo preparar el programa de shaders.");
         }
-
+        // ESTO ES PRIMITIVAS SOLAS!!=====================================================================
         /*
          MeshData datos;
 
@@ -124,47 +124,104 @@ int main()
             << " | Indices: " << malla.count()
             << '\n';
         */
+        // ESTO ES PRIMITIVAS SOLAS!!=====================================================================
+        // Esto es las 3 con rotacion=====================================================================
+        /*
+                // Generamos los datos una sola vez.
+                const MeshData datosCubo = primitives::cube();
 
-        // Generamos los datos una sola vez.
-        const MeshData datosCubo = primitives::cube();
+                const MeshData datosCilindro =
+                    primitives::cylinder(0.5f, 1.0f, 32U);
 
-        const MeshData datosCilindro =
-            primitives::cylinder(0.5f, 1.0f, 32U);
+                const MeshData datosCono =
+                    primitives::cone(0.5f, 60.0f, 32U);
 
-        const MeshData datosCono =
-            primitives::cone(0.5f, 60.0f, 32U);
+                // Cada Mesh administra los recursos de una primitiva.
+                Mesh cubo;
+                Mesh cilindro;
+                Mesh cono;
 
-        // Cada Mesh administra los recursos de una primitiva.
-        Mesh cubo;
-        Mesh cilindro;
-        Mesh cono;
+                cubo.load(datosCubo);
+                cilindro.load(datosCilindro);
+                cono.load(datosCono);
 
-        cubo.load(datosCubo);
-        cilindro.load(datosCilindro);
-        cono.load(datosCono);
+                std::cout
+                    << "Cubo: "
+                    << datosCubo.vertices.size() << " vertices, "
+                    << cubo.count() << " indices\n";
 
-        std::cout
-            << "Cubo: "
-            << datosCubo.vertices.size() << " vertices, "
-            << cubo.count() << " indices\n";
+                std::cout
+                    << "Cilindro: "
+                    << datosCilindro.vertices.size() << " vertices, "
+                    << cilindro.count() << " indices\n";
 
-        std::cout
-            << "Cilindro: "
-            << datosCilindro.vertices.size() << " vertices, "
-            << cilindro.count() << " indices\n";
+                std::cout
+                    << "Cono: "
+                    << datosCono.vertices.size() << " vertices, "
+                    << cono.count() << " indices\n";
 
-        std::cout
-            << "Cono: "
-            << datosCono.vertices.size() << " vertices, "
-            << cono.count() << " indices\n";
+                // Consultamos las ubicaciones una sola vez.
+                const int ubicacionModelo = shader.loc("uModel");
+                const int ubicacionAjuste = shader.loc("uAjuste");
+                const int ubicacionColor = shader.loc("uColor");
 
-        // Consultamos las ubicaciones una sola vez.
+                // Punto de partida para medir el tiempo de la animacion.
+                const double inicioAnimacion = glfwGetTime();
+        //Esto es las 3 con rotacion=====================================================================
+
+        */
+        // ESTO ES AVION===================================================================================
+
+        // Medidas provisionales para empezar el modelo.
+        const float L = 1.0f;
+
+        const float largoNariz = L / 5.0f;
+        const float radioNariz = L / 10.0f;
+
+        // Con radio 1 y apertura de 90 grados,
+        // el cono generado tiene altura 1.
+        const MeshData datosNariz = primitives::cone(
+            1.0f,
+            90.0f,
+            32U);
+
+        Mesh nariz;
+        nariz.load(datosNariz);
+
         const int ubicacionModelo = shader.loc("uModel");
         const int ubicacionAjuste = shader.loc("uAjuste");
         const int ubicacionColor = shader.loc("uColor");
 
-        // Punto de partida para medir el tiempo de la animacion.
-        const double inicioAnimacion = glfwGetTime();
+        // Transformacion de la nariz dentro del avion.
+        glm::mat4 localNariz = glm::mat4(1.0f);
+
+        localNariz = glm::translate(
+            localNariz,
+            glm::vec3(0.0f, 0.0f, largoNariz * 0.5f));
+
+        localNariz = glm::rotate(
+            localNariz,
+            glm::radians(-90.0f),
+            glm::vec3(1.0f, 0.0f, 0.0f));
+
+        localNariz = glm::scale(
+            localNariz,
+            glm::vec3(radioNariz, largoNariz, radioNariz));
+
+        // Orientacion del conjunto para observarlo de costado.
+        // No forma parte de las medidas ni del armado de la nariz.
+        glm::mat4 presentacion = glm::mat4(1.0f);
+
+        presentacion = glm::rotate(
+            presentacion,
+            glm::radians(-55.0f),
+            glm::vec3(0.0f, 1.0f, 0.0f));
+
+        presentacion = glm::rotate(
+            presentacion,
+            glm::radians(20.0f),
+            glm::vec3(1.0f, 0.0f, 0.0f));
+
         glEnable(GL_DEPTH_TEST);
         glClearColor(0.10f, 0.12f, 0.16f, 1.0f);
 
@@ -232,6 +289,8 @@ int main()
 
             shader.set_uniform(ubicacionAjuste, ajuste);
 
+            // Esto es las 3 con rotacion=====================================================================
+            /*
             glClear(
                 GL_COLOR_BUFFER_BIT |
                 GL_DEPTH_BUFFER_BIT);
@@ -354,6 +413,31 @@ int main()
                 nullptr);
 
             // Presentamos la imagen cuando terminamos las tres piezas.
+            glfwSwapBuffers(ventana);
+            */
+           //ESTO ES AVION===================================================================================
+            glClear(
+                GL_COLOR_BUFFER_BIT |
+                GL_DEPTH_BUFFER_BIT);
+
+            shader.use();
+
+            shader.set_uniform(
+                ubicacionModelo,
+                presentacion * localNariz);
+
+            shader.set_uniform(
+                ubicacionColor,
+                glm::vec3(1.0f, 0.5f, 0.2f));
+
+            glBindVertexArray(nariz.vao());
+
+            glDrawElements(
+                GL_TRIANGLES,
+                nariz.count(),
+                GL_UNSIGNED_INT,
+                nullptr);
+
             glfwSwapBuffers(ventana);
         }
 

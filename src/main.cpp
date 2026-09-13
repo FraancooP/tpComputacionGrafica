@@ -179,6 +179,11 @@ int main()
         const float radioNariz = L / 10.0f;
         const float largoFuselaje = L;
         const float radioFuselaje = radioNariz;
+        const float largoAla = L / 2.0f;
+        const float cuerdaAla = L / 4.0f;
+        const float espesorAla = L / 40.0f;
+
+        const float posicionZAla = largoNariz + largoFuselaje * 0.45f;
 
         // Con radio 1 y apertura de 90 grados,
         // el cono generado tiene altura 1.
@@ -198,6 +203,10 @@ int main()
         Mesh fuselaje;
         fuselaje.load(datosFuselaje);
 
+        const MeshData datosAla = primitives::cube();
+        Mesh mallaAla;
+        mallaAla.load(datosAla);
+
         const int ubicacionModelo = shader.loc("uModel");
         const int ubicacionAjuste = shader.loc("uAjuste");
         const int ubicacionColor = shader.loc("uColor");
@@ -205,6 +214,8 @@ int main()
         // Transformacion de la nariz dentro del avion.
         glm::mat4 localNariz = glm::mat4(1.0f);
         glm::mat4 localFuselaje = glm::mat4(1.0f);
+        glm::mat4 localAlaIzquierda = glm::mat4(1.0f);
+        glm::mat4 localAlaDerecha = glm::mat4(1.0f);
 
         // NARIZ
 
@@ -236,13 +247,30 @@ int main()
             localFuselaje,
             glm::vec3(radioFuselaje, largoFuselaje, radioFuselaje));
 
+        // ALA IZQUIERDA
+        localAlaIzquierda = glm::translate(
+            localAlaIzquierda,
+            glm::vec3(-largoAla * 0.5f, 0.0f, posicionZAla));
+
+        localAlaIzquierda = glm::scale(
+            localAlaIzquierda,
+            glm::vec3(largoAla, espesorAla, cuerdaAla));
+
+        // ALA DERECHA
+        localAlaDerecha = glm::translate(
+            localAlaDerecha,
+            glm::vec3(largoAla * 0.5f, 0.0f, posicionZAla));
+        localAlaDerecha = glm::scale(
+            localAlaDerecha,
+            glm::vec3(largoAla, espesorAla, cuerdaAla));
+
         // Orientacion del conjunto para observarlo de costado.
         // No forma parte de las medidas ni del armado de la nariz.
         glm::mat4 presentacion = glm::mat4(1.0f);
 
         presentacion = glm::rotate(
             presentacion,
-            glm::radians(-55.0f),
+            glm::radians(55.0f),
             glm::vec3(0.0f, 1.0f, 0.0f));
 
         presentacion = glm::rotate(
@@ -480,6 +508,35 @@ int main()
             glDrawElements(
                 GL_TRIANGLES,
                 fuselaje.count(),
+                GL_UNSIGNED_INT,
+                nullptr);
+
+            // Las dos alas usan la misma malla y el mismo color.
+            shader.set_uniform(
+                ubicacionColor,
+                glm::vec3(0.25f, 0.55f, 0.9f));
+
+            glBindVertexArray(mallaAla.vao());
+
+            // Ala izquierda.
+            shader.set_uniform(
+                ubicacionModelo,
+                presentacion * localAlaIzquierda);
+
+            glDrawElements(
+                GL_TRIANGLES,
+                mallaAla.count(),
+                GL_UNSIGNED_INT,
+                nullptr);
+
+            // Ala derecha.
+            shader.set_uniform(
+                ubicacionModelo,
+                presentacion * localAlaDerecha);
+
+            glDrawElements(
+                GL_TRIANGLES,
+                mallaAla.count(),
                 GL_UNSIGNED_INT,
                 nullptr);
 

@@ -182,9 +182,16 @@ int main()
         const float largoAla = L / 2.0f;
         const float cuerdaAla = L / 4.0f;
         const float espesorAla = L / 40.0f;
+        const float anchoEstabilizador = L / 2.0f;
+        const float cuerdaEstabilizador = L / 5.0f;
+        const float espesorEstabilizador = L / 40.0f;
+
+        const float alturaDeriva = L / 3.0f;
+        const float cuerdaDeriva = L / 5.0f;
+        const float espesorDeriva = L / 40.0f;
 
         const float posicionZAla = largoNariz + largoFuselaje * 0.45f;
-
+        const float posicionZCola = largoNariz + largoFuselaje * 0.88f;
         // Con radio 1 y apertura de 90 grados,
         // el cono generado tiene altura 1.
         const MeshData datosNariz = primitives::cone(
@@ -211,11 +218,13 @@ int main()
         const int ubicacionAjuste = shader.loc("uAjuste");
         const int ubicacionColor = shader.loc("uColor");
 
-        // Transformacion de la nariz dentro del avion.
+        // Transformaciones locales de cada parte del avion.
         glm::mat4 localNariz = glm::mat4(1.0f);
         glm::mat4 localFuselaje = glm::mat4(1.0f);
         glm::mat4 localAlaIzquierda = glm::mat4(1.0f);
         glm::mat4 localAlaDerecha = glm::mat4(1.0f);
+        glm::mat4 localEstabilizador = glm::mat4(1.0f);
+        glm::mat4 localDeriva = glm::mat4(1.0f);
 
         // NARIZ
 
@@ -263,6 +272,37 @@ int main()
         localAlaDerecha = glm::scale(
             localAlaDerecha,
             glm::vec3(largoAla, espesorAla, cuerdaAla));
+
+        // ESTABILIZADOR
+        localEstabilizador = glm::translate(
+            localEstabilizador,
+            glm::vec3(
+                0.0f,
+                0.0f,
+                posicionZCola));
+
+        localEstabilizador = glm::scale(
+            localEstabilizador,
+            glm::vec3(
+                anchoEstabilizador,
+                espesorEstabilizador,
+                cuerdaEstabilizador));
+
+        // DERIVA
+
+        localDeriva = glm::translate(
+            localDeriva,
+            glm::vec3(
+                0.0f,
+                alturaDeriva * 0.5f,
+                posicionZCola));
+
+        localDeriva = glm::scale(
+            localDeriva,
+            glm::vec3(
+                espesorDeriva,
+                alturaDeriva,
+                cuerdaDeriva));
 
         // Orientacion del conjunto para observarlo de costado.
         // No forma parte de las medidas ni del armado de la nariz.
@@ -533,6 +573,42 @@ int main()
             shader.set_uniform(
                 ubicacionModelo,
                 presentacion * localAlaDerecha);
+
+            glDrawElements(
+                GL_TRIANGLES,
+                mallaAla.count(),
+                GL_UNSIGNED_INT,
+                nullptr);
+
+
+            
+            
+            // Reutilizamos la malla de cubo de las alas.
+            glBindVertexArray(mallaAla.vao());
+
+            // Estabilizador horizontal.
+            shader.set_uniform(
+                ubicacionModelo,
+                presentacion * localEstabilizador);
+
+            shader.set_uniform(
+                ubicacionColor,
+                glm::vec3(0.3f, 0.8f, 0.45f));
+
+            glDrawElements(
+                GL_TRIANGLES,
+                mallaAla.count(),
+                GL_UNSIGNED_INT,
+                nullptr);
+
+            // Deriva vertical.
+            shader.set_uniform(
+                ubicacionModelo,
+                presentacion * localDeriva);
+
+            shader.set_uniform(
+                ubicacionColor,
+                glm::vec3(0.95f, 0.8f, 0.2f));
 
             glDrawElements(
                 GL_TRIANGLES,

@@ -6,6 +6,7 @@
 #include "ResourceManager.h"
 #include "Shader.h"
 #include "Mesh.h"
+#include "Primitives.h"
 
 #include <exception>
 #include <iostream>
@@ -23,7 +24,7 @@ void errorGLFW(int codigo, const char *mensaje)
 
 int main()
 {
-    
+
     glfwSetErrorCallback(errorGLFW);
 
     if (!glfwInit())
@@ -87,16 +88,19 @@ int main()
             throw std::runtime_error(
                 "No se pudo preparar el programa de shaders.");
         }
-        MeshData datos;
 
-        datos.vertices = {
-            // Posicion                 // Color
-            {-0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f},
-            {0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f},
-            {0.0f, 0.5f, 0.0f, 0.0f, 0.0f, 1.0f}};
+        // MeshData datos;
 
-        datos.indices = {
-            0, 1, 2};
+        // datos.vertices = {
+        //     // Posicion                 // Color
+        //     {-0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f},
+        //     {0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f},
+        //     {0.0f, 0.5f, 0.0f, 0.0f, 0.0f, 1.0f}};
+        //
+        // datos.indices = {
+        //     0, 1, 2};
+
+        MeshData datos = primitives::cube();
 
         Mesh malla;
         malla.load(datos);
@@ -106,6 +110,7 @@ int main()
             << " | Indices: " << malla.count()
             << '\n';
 
+        glEnable(GL_DEPTH_TEST);
         glClearColor(0.10f, 0.12f, 0.16f, 1.0f);
 
         while (!glfwWindowShouldClose(ventana))
@@ -123,7 +128,9 @@ int main()
             glfwGetFramebufferSize(ventana, &ancho, &alto);
             glViewport(0, 0, ancho, alto);
 
-            glClear(GL_COLOR_BUFFER_BIT);
+            glClear(
+                GL_COLOR_BUFFER_BIT |
+                GL_DEPTH_BUFFER_BIT);
 
             shader.use();
 

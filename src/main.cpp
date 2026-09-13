@@ -186,6 +186,9 @@ int main()
         const float cuerdaEstabilizador = L / 5.0f;
         const float espesorEstabilizador = L / 40.0f;
 
+        const float largoCola = L / 5.0f;
+        const float radioCola = radioNariz;
+
         const float alturaDeriva = L / 3.0f;
         const float cuerdaDeriva = L / 5.0f;
         const float espesorDeriva = L / 40.0f;
@@ -225,6 +228,7 @@ int main()
         glm::mat4 localAlaDerecha = glm::mat4(1.0f);
         glm::mat4 localEstabilizador = glm::mat4(1.0f);
         glm::mat4 localDeriva = glm::mat4(1.0f);
+        glm::mat4 localCola = glm::mat4(1.0f);
 
         // NARIZ
 
@@ -303,6 +307,27 @@ int main()
                 espesorDeriva,
                 alturaDeriva,
                 cuerdaDeriva));
+
+        //COLA
+
+        localCola = glm::translate(
+            localCola,
+            glm::vec3(
+                0.0f,
+                0.0f,
+                posicionZCola + largoCola * 0.5f));
+
+        localCola = glm::rotate(
+            localCola,
+            glm::radians(-90.0f),
+            glm::vec3(1.0f, 0.0f, 0.0f));
+
+        localCola = glm::scale(
+            localCola,
+            glm::vec3(
+                radioCola,
+                largoCola,
+                radioCola));
 
         // Orientacion del conjunto para observarlo de costado.
         // No forma parte de las medidas ni del armado de la nariz.
@@ -609,6 +634,24 @@ int main()
             shader.set_uniform(
                 ubicacionColor,
                 glm::vec3(0.95f, 0.8f, 0.2f));
+
+            glDrawElements(
+                GL_TRIANGLES,
+                mallaAla.count(),
+                GL_UNSIGNED_INT,
+                nullptr);
+
+
+
+            // COLA
+            
+            shader.set_uniform(
+                ubicacionModelo,
+                presentacion * localCola);
+
+            shader.set_uniform(
+                ubicacionColor,
+                glm::vec3(0.5f, 0.5f, 0.5f));
 
             glDrawElements(
                 GL_TRIANGLES,

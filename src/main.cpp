@@ -104,11 +104,17 @@ int main()
 
         // Crea un cubo.
         // MeshData datos = primitives::cube();
-
+        /*
         MeshData datos = primitives::cylinder(
             0.5f,
             1.0f,
-            8U);
+            32U);
+        */
+        MeshData datos = primitives::cone(
+            0.5f,
+            60.0f,
+            32U);
+
         Mesh malla;
         malla.load(datos);
 

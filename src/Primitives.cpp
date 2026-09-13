@@ -218,4 +218,175 @@ namespace primitives
 
         return datos;
     }
+
+    MeshData cone(
+        float radio,
+        float conicidad,
+        unsigned int gajos,
+        unsigned int anillos)
+    {
+        if (radio <= 0.0f ||
+            conicidad <= 0.0f || conicidad >= 180.0f ||
+            gajos < 3U || anillos < 1U)
+        {
+            throw std::invalid_argument(
+                "Cono: radio positivo, apertura entre 0 y 180 grados, "
+                "al menos 3 gajos y 1 tramo longitudinal.");
+        }
+
+        MeshData datos;
+
+        const float semiangulo = glm::radians(conicidad * 0.5f);
+
+        const float altura = radio / std::tan(semiangulo);
+        const float mitadAltura = altura * 0.5f;
+
+        const float vuelta = glm::two_pi<float>();
+
+        const float cosSemiangulo = std::cos(semiangulo);
+        const float sinSemiangulo = std::sin(semiangulo);
+
+        const unsigned int porAnillo = gajos + 1U;
+
+        // --------------------------------------------------
+        // 1. Coronas del lateral, sin incluir la punta.
+        // --------------------------------------------------
+
+        for (unsigned int i = 0; i < anillos; ++i)
+        {
+            const float v =
+                static_cast<float>(i) /
+                static_cast<float>(anillos);
+
+            const float y = -mitadAltura + altura * v;
+            const float radioActual = radio * (1.0f - v);
+
+            for (unsigned int j = 0; j <= gajos; ++j)
+            {
+                const float u =
+                    static_cast<float>(j) /
+                    static_cast<float>(gajos);
+
+                const float angulo =
+                    (j == gajos) ? 0.0f : vuelta * u;
+
+                const float c = std::cos(angulo);
+                const float s = std::sin(angulo);
+
+                datos.vertices.push_back(
+                    Vertex{
+                        glm::vec3(
+                            radioActual * c,
+                            y,
+                            radioActual * s),
+                        glm::vec3(
+                            c * cosSemiangulo,
+                            sinSemiangulo,
+                            s * cosSemiangulo),
+                        glm::vec2(u, v)});
+            }
+        }
+
+        // --------------------------------------------------
+        // 2. Conectamos las coronas entre si.
+        // --------------------------------------------------
+
+        for (unsigned int i = 0; i + 1U < anillos; ++i)
+        {
+            for (unsigned int j = 0; j < gajos; ++j)
+            {
+                const unsigned int b0 = i * porAnillo + j;
+                const unsigned int b1 = b0 + 1U;
+
+                const unsigned int t0 = b0 + porAnillo;
+                const unsigned int t1 = t0 + 1U;
+
+                datos.indices.insert(
+                    datos.indices.end(),
+                    {b0, t1, b1,
+                     b0, t0, t1});
+            }
+        }
+
+        // --------------------------------------------------
+        // 3. Conectamos la ultima corona con la punta.
+        // --------------------------------------------------
+
+        const unsigned int ultimaCorona =
+            (anillos - 1U) * porAnillo;
+
+        for (unsigned int j = 0; j < gajos; ++j)
+        {
+            const unsigned int apice =
+                static_cast<unsigned int>(datos.vertices.size());
+
+            const float u =
+                (static_cast<float>(j) + 0.5f) /
+                static_cast<float>(gajos);
+
+            datos.vertices.push_back(
+                Vertex{
+                    glm::vec3(0.0f, mitadAltura, 0.0f),
+                    glm::vec3(0.0f, 1.0f, 0.0f),
+                    glm::vec2(u, 1.0f)});
+
+            const unsigned int b0 = ultimaCorona + j;
+            const unsigned int b1 = b0 + 1U;
+
+            datos.indices.insert(
+                datos.indices.end(),
+                {b0, apice, b1});
+        }
+
+        // --------------------------------------------------
+        // 4. Tapa inferior.
+        // --------------------------------------------------
+
+        const unsigned int centro =
+            static_cast<unsigned int>(datos.vertices.size());
+
+        datos.vertices.push_back(
+            Vertex{
+                glm::vec3(0.0f, -mitadAltura, 0.0f),
+                glm::vec3(0.0f, -1.0f, 0.0f),
+                glm::vec2(0.5f, 0.5f)});
+
+        const unsigned int inicioBorde =
+            static_cast<unsigned int>(datos.vertices.size());
+
+        for (unsigned int j = 0; j < gajos; ++j)
+        {
+            const float angulo =
+                vuelta * static_cast<float>(j) /
+                static_cast<float>(gajos);
+
+            const float c = std::cos(angulo);
+            const float s = std::sin(angulo);
+
+            datos.vertices.push_back(
+                Vertex{
+                    glm::vec3(
+                        radio * c,
+                        -mitadAltura,
+                        radio * s),
+                    glm::vec3(0.0f, -1.0f, 0.0f),
+                    glm::vec2(
+                        0.5f + 0.5f * c,
+                        0.5f + 0.5f * s)});
+        }
+
+        for (unsigned int j = 0; j < gajos; ++j)
+        {
+            const unsigned int actual = inicioBorde + j;
+
+            const unsigned int siguiente =
+                inicioBorde + (j + 1U) % gajos;
+
+            datos.indices.insert(
+                datos.indices.end(),
+                {centro, actual, siguiente});
+        }
+
+        return datos;
+    }
 }

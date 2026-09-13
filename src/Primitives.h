@@ -24,4 +24,18 @@ namespace primitives
         float largo,
         unsigned int gajos,
         unsigned int anillos = 1U);
+
+    // Cono con tapa, eje longitudinal Y y punta hacia +Y.
+    // Origen a mitad de altura.
+    // conicidad: angulo COMPLETO de apertura, en grados.
+    // radio > 0; 0 < conicidad < 180.
+    // gajos >= 3; anillos >= 1.
+    // anillos indica la cantidad de tramos longitudinales.
+    // En el apice usamos normal axial y una copia por gajo
+    // para asignar una coordenada U propia a cada sector.
+    MeshData cone(
+        float radio,
+        float conicidad,
+        unsigned int gajos,
+        unsigned int anillos = 1U);
 }

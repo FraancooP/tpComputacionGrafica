@@ -21,7 +21,7 @@ void main()
 
 // Se ejecuta una vez por fragmento.
 const char* fragmentShaderSource = R"glsl(
-#version 460 core
+#version 450 core
 
 out vec4 FragColor;
 

@@ -91,25 +91,26 @@ int main()
                 "No se pudo preparar el programa de shaders.");
         }
 
-        // MeshData datos;
-
-        // datos.vertices = {
-        //     // Posicion                 // Color
-        //     {-0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f},
-        //     {0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f},
-        //     {0.0f, 0.5f, 0.0f, 0.0f, 0.0f, 1.0f}};
-        //
-        // datos.indices = {
-        //     0, 1, 2};
-
-        // Crea un cubo.
-        // MeshData datos = primitives::cube();
         /*
+         MeshData datos;
+
+        datos.vertices = {
+             // Posicion                 // Color
+             {-0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f},
+             {0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f},
+             {0.0f, 0.5f, 0.0f, 0.0f, 0.0f, 1.0f}};
+
+         datos.indices = {
+             0, 1, 2};
+
+         Crea un cubo.
+         MeshData datos = primitives::cube();
+
         MeshData datos = primitives::cylinder(
             0.5f,
             1.0f,
             32U);
-        */
+
         MeshData datos = primitives::cone(
             0.5f,
             60.0f,
@@ -122,13 +123,50 @@ int main()
             << "Vertices: " << datos.vertices.size()
             << " | Indices: " << malla.count()
             << '\n';
+        */
 
-        glEnable(GL_DEPTH_TEST);
-        glClearColor(0.10f, 0.12f, 0.16f, 1.0f);
+        // Generamos los datos una sola vez.
+        const MeshData datosCubo = primitives::cube();
 
+        const MeshData datosCilindro =
+            primitives::cylinder(0.5f, 1.0f, 32U);
+
+        const MeshData datosCono =
+            primitives::cone(0.5f, 60.0f, 32U);
+
+        // Cada Mesh administra los recursos de una primitiva.
+        Mesh cubo;
+        Mesh cilindro;
+        Mesh cono;
+
+        cubo.load(datosCubo);
+        cilindro.load(datosCilindro);
+        cono.load(datosCono);
+
+        std::cout
+            << "Cubo: "
+            << datosCubo.vertices.size() << " vertices, "
+            << cubo.count() << " indices\n";
+
+        std::cout
+            << "Cilindro: "
+            << datosCilindro.vertices.size() << " vertices, "
+            << cilindro.count() << " indices\n";
+
+        std::cout
+            << "Cono: "
+            << datosCono.vertices.size() << " vertices, "
+            << cono.count() << " indices\n";
+
+        // Consultamos las ubicaciones una sola vez.
         const int ubicacionModelo = shader.loc("uModel");
         const int ubicacionAjuste = shader.loc("uAjuste");
         const int ubicacionColor = shader.loc("uColor");
+
+        // Punto de partida para medir el tiempo de la animacion.
+        const double inicioAnimacion = glfwGetTime();
+        glEnable(GL_DEPTH_TEST);
+        glClearColor(0.10f, 0.12f, 0.16f, 1.0f);
 
         // Empezamos con la matriz identidad.
         glm::mat4 modelo = glm::mat4(1.0f);
@@ -198,16 +236,124 @@ int main()
                 GL_COLOR_BUFFER_BIT |
                 GL_DEPTH_BUFFER_BIT);
 
+            const float tiempo = static_cast<float>(
+                glfwGetTime() - inicioAnimacion);
+
+            // Velocidad: 30 grados por segundo.
+            const float angulo = glm::radians(30.0f) * tiempo;
+
             shader.use();
 
-            glBindVertexArray(malla.vao());
+            // --------------------------------------------------
+            // CUBO: a la izquierda.
+            // --------------------------------------------------
+
+            glm::mat4 modeloCubo = glm::mat4(1.0f);
+
+            modeloCubo = glm::translate(
+                modeloCubo,
+                glm::vec3(-0.9f, 0.15f, 0.0f));
+
+            modeloCubo = glm::rotate(
+                modeloCubo,
+                glm::radians(25.0f),
+                glm::vec3(1.0f, 0.0f, 0.0f));
+
+            modeloCubo = glm::rotate(
+                modeloCubo,
+                angulo,
+                glm::vec3(0.0f, 1.0f, 0.0f));
+
+            modeloCubo = glm::scale(
+                modeloCubo,
+                glm::vec3(0.42f, 0.42f, 0.42f));
+
+            shader.set_uniform(ubicacionModelo, modeloCubo);
+
+            shader.set_uniform(
+                ubicacionColor,
+                glm::vec3(1.0f, 0.5f, 0.2f));
+
+            glBindVertexArray(cubo.vao());
 
             glDrawElements(
                 GL_TRIANGLES,
-                malla.count(),
+                cubo.count(),
                 GL_UNSIGNED_INT,
                 nullptr);
 
+            // --------------------------------------------------
+            // CILINDRO: en el centro.
+            // --------------------------------------------------
+
+            glm::mat4 modeloCilindro = glm::mat4(1.0f);
+
+            modeloCilindro = glm::translate(
+                modeloCilindro,
+                glm::vec3(0.0f, -0.15f, 0.0f));
+
+            modeloCilindro = glm::rotate(
+                modeloCilindro,
+                angulo,
+                glm::vec3(1.0f, 0.0f, 0.0f));
+
+            modeloCilindro = glm::scale(
+                modeloCilindro,
+                glm::vec3(0.42f, 0.65f, 0.42f));
+
+            shader.set_uniform(ubicacionModelo, modeloCilindro);
+
+            shader.set_uniform(
+                ubicacionColor,
+                glm::vec3(0.2f, 0.8f, 0.4f));
+
+            glBindVertexArray(cilindro.vao());
+
+            glDrawElements(
+                GL_TRIANGLES,
+                cilindro.count(),
+                GL_UNSIGNED_INT,
+                nullptr);
+
+            // --------------------------------------------------
+            // CONO: a la derecha.
+            // --------------------------------------------------
+
+            glm::mat4 modeloCono = glm::mat4(1.0f);
+
+            modeloCono = glm::translate(
+                modeloCono,
+                glm::vec3(0.9f, 0.15f, 0.0f));
+
+            modeloCono = glm::rotate(
+                modeloCono,
+                glm::radians(25.0f),
+                glm::vec3(1.0f, 0.0f, 0.0f));
+
+            modeloCono = glm::rotate(
+                modeloCono,
+                -angulo,
+                glm::vec3(0.0f, 0.0f, 1.0f));
+
+            modeloCono = glm::scale(
+                modeloCono,
+                glm::vec3(0.6f, 0.7f, 0.6f));
+
+            shader.set_uniform(ubicacionModelo, modeloCono);
+
+            shader.set_uniform(
+                ubicacionColor,
+                glm::vec3(0.3f, 0.6f, 1.0f));
+
+            glBindVertexArray(cono.vao());
+
+            glDrawElements(
+                GL_TRIANGLES,
+                cono.count(),
+                GL_UNSIGNED_INT,
+                nullptr);
+
+            // Presentamos la imagen cuando terminamos las tres piezas.
             glfwSwapBuffers(ventana);
         }
 

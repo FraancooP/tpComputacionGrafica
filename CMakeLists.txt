@@ -56,6 +56,7 @@ add_executable(cgyav
     src/Shader.cpp
     src/Mesh.cpp
     src/Primitives.cpp
+    src/Aircraft.cpp
 )
 
 target_link_libraries(cgyav PRIVATE

@@ -7,12 +7,13 @@ layout (location = 2) in vec2 aTexCoords;
 out vec3 vNormal;
 
 uniform mat4 uModel;
-uniform mat4 uAjuste;
+uniform mat4 uView;
+uniform mat4 uProjection;
 
 void main()
 {
     vNormal = aNormal;
 
     gl_Position =
-        uAjuste * uModel * vec4(aPos, 1.0);
+        uProjection * uView * uModel * vec4(aPos, 1.0);
 }

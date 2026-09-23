@@ -9,13 +9,14 @@
 #include "Aircraft.h"
 #include "ResourceManager.h"
 #include "Shader.h"
+#include "CameraSystem.h"
 
 #include <cmath>
 #include <exception>
 #include <iostream>
 #include <stdexcept>
 
-void errorGLFW(int codigo, const char* mensaje)
+void errorGLFW(int codigo, const char *mensaje)
 {
     std::cerr
         << "Error GLFW "
@@ -23,6 +24,21 @@ void errorGLFW(int codigo, const char* mensaje)
         << ": "
         << mensaje
         << '\n';
+}
+void redimensionarFramebuffer(
+    GLFWwindow *ventana,
+    int ancho,
+    int alto)
+{
+    glViewport(0, 0, ancho, alto);
+
+    auto *camara = static_cast<CameraSystem *>(
+        glfwGetWindowUserPointer(ventana));
+
+    if (camara != nullptr)
+    {
+        camara->set_viewport(ancho, alto);
+    }
 }
 
 int main()
@@ -38,13 +54,12 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow* ventana = glfwCreateWindow(
+    GLFWwindow *ventana = glfwCreateWindow(
         800,
         600,
         "Practico 04 - Aeronave: cabeceo y rolido",
         nullptr,
-        nullptr
-    );
+        nullptr);
 
     if (ventana == nullptr)
     {
@@ -83,18 +98,16 @@ int main()
         ResourceManager recursos("assets");
         Shader shader;
 
-        const ShaderSource& fuentes =
+        const ShaderSource &fuentes =
             recursos.load_shader_source(
                 "solid",
                 "shaders/solid.vs",
-                "shaders/solid.fs"
-            );
+                "shaders/solid.fs");
 
         if (!shader.compile_from_source(fuentes.vs, fuentes.fs))
         {
             throw std::runtime_error(
-                "No se pudo preparar el programa de shaders."
-            );
+                "No se pudo preparar el programa de shaders.");
         }
 
         // --------------------------------------------------
@@ -126,28 +139,36 @@ int main()
         // --------------------------------------------------
 
         const int ubicacionModelo = shader.loc("uModel");
-        const int ubicacionAjuste = shader.loc("uAjuste");
+        const int ubicacionVista = shader.loc("uView");
+        const int ubicacionProyeccion = shader.loc("uProjection");
         const int ubicacionColor = shader.loc("uColor");
 
-        // --------------------------------------------------
-        // Presentacion del conjunto.
-        // --------------------------------------------------
-
+        // Posicion del punto de referencia del avion en el mundo.
         const glm::vec3 posicionAvion(0.0f, 0.0f, 0.0f);
 
-        glm::mat4 presentacion = glm::mat4(1.0f);
+        // Usamos el tamaño real del framebuffer.
+        int anchoInicial = 0;
+        int altoInicial = 0;
 
-        presentacion = glm::rotate(
-            presentacion,
-            glm::radians(55.0f),
-            glm::vec3(0.0f, 1.0f, 0.0f)
-        );
+        glfwGetFramebufferSize(
+            ventana,
+            &anchoInicial,
+            &altoInicial);
 
-        presentacion = glm::rotate(
-            presentacion,
-            glm::radians(45.0f),
-            glm::vec3(1.0f, 0.0f, 0.0f)
-        );
+        CameraSystem camara(anchoInicial, altoInicial);
+
+        // Asociamos la camara a la ventana para acceder desde el callback.
+        glfwSetWindowUserPointer(ventana, &camara);
+
+        glfwSetFramebufferSizeCallback(
+            ventana,
+            redimensionarFramebuffer);
+
+        // Aplicamos tambien el viewport inicial.
+        redimensionarFramebuffer(
+            ventana,
+            anchoInicial,
+            altoInicial);
 
         glEnable(GL_DEPTH_TEST);
         glClearColor(0.10f, 0.12f, 0.16f, 1.0f);
@@ -177,23 +198,27 @@ int main()
                 continue;
             }
 
-            glViewport(0, 0, ancho, alto);
+            // Por ahora no hay entrada del mouse: todos los deltas son cero.
+            const CameraCommand comando{};
 
-            const float relacion =
-                static_cast<float>(alto) /
-                static_cast<float>(ancho);
+            camara.update(
+                posicionAvion,
+                glm::vec3(0.0f),
+                comando);
 
-            const glm::mat4 ajuste = glm::scale(
-                glm::mat4(1.0f),
-                glm::vec3(relacion, 1.0f, -1.0f)
-            );
+            const CameraData &datosCamara = camara.data();
 
-            shader.set_uniform(ubicacionAjuste, ajuste);
+            shader.set_uniform(
+                ubicacionVista,
+                datosCamara.view);
+
+            shader.set_uniform(
+                ubicacionProyeccion,
+                datosCamara.projection);
 
             glClear(
                 GL_COLOR_BUFFER_BIT |
-                GL_DEPTH_BUFFER_BIT
-            );
+                GL_DEPTH_BUFFER_BIT);
 
             // --------------------------------------------------
             // Prueba alternada de cabeceo y rolido.
@@ -205,8 +230,7 @@ int main()
             const float duracion = 6.0f;
 
             const float fase = static_cast<float>(
-                std::fmod(tiempo, 12.0)
-            );
+                std::fmod(tiempo, 12.0));
 
             float cabeceo = 0.0f;
             float rolido = 0.0f;
@@ -238,25 +262,21 @@ int main()
 
             pose = glm::translate(
                 pose,
-                posicionAvion
-            );
+                posicionAvion);
 
             pose = glm::rotate(
                 pose,
                 cabeceo,
-                glm::vec3(1.0f, 0.0f, 0.0f)
-            );
+                glm::vec3(1.0f, 0.0f, 0.0f));
 
             pose = glm::rotate(
                 pose,
                 rolido,
-                glm::vec3(0.0f, 0.0f, 1.0f)
-            );
+                glm::vec3(0.0f, 0.0f, 1.0f));
 
             pose = glm::translate(
                 pose,
-                -referencia
-            );
+                -referencia);
 
             // --------------------------------------------------
             // Dibujamos las siete piezas.
@@ -264,19 +284,17 @@ int main()
 
             shader.use();
 
-            for (const PiezaAvion& pieza : avion.piezas())
+            for (const PiezaAvion &pieza : avion.piezas())
             {
-                const Mesh& malla = avion.malla(pieza.tipo);
+                const Mesh &malla = avion.malla(pieza.tipo);
 
                 shader.set_uniform(
                     ubicacionModelo,
-                    presentacion * pose * pieza.local
-                );
+                    pose * pieza.local);
 
                 shader.set_uniform(
                     ubicacionColor,
-                    pieza.color
-                );
+                    pieza.color);
 
                 glBindVertexArray(malla.vao());
 
@@ -284,18 +302,20 @@ int main()
                     GL_TRIANGLES,
                     malla.count(),
                     GL_UNSIGNED_INT,
-                    nullptr
-                );
+                    nullptr);
             }
 
             glfwSwapBuffers(ventana);
         }
     }
-    catch (const std::exception& error)
+    catch (const std::exception &error)
     {
         std::cerr << error.what() << '\n';
         resultado = 1;
     }
+    
+    glfwSetFramebufferSizeCallback(ventana, nullptr);
+    glfwSetWindowUserPointer(ventana, nullptr);
 
     glfwDestroyWindow(ventana);
     glfwTerminate();

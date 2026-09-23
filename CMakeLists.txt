@@ -57,6 +57,7 @@ add_executable(cgyav
     src/Mesh.cpp
     src/Primitives.cpp
     src/Aircraft.cpp
+    src/CameraSystem.cpp
 )
 
 target_link_libraries(cgyav PRIVATE

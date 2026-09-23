@@ -27,7 +27,7 @@ public:
     // L representa el largo del tramo cilindrico.
     void init(float L = 1.0f);
 
-    const std::array<PiezaAvion, 6>& piezas() const
+    const std::array<PiezaAvion, 7>& piezas() const
     {
         return piezas_;
     }
@@ -44,7 +44,7 @@ private:
     Mesh cilindro_;
     Mesh cono_;
 
-    std::array<PiezaAvion, 6> piezas_;
+    std::array<PiezaAvion, 7> piezas_;
 
     glm::vec3 puntoReferencia_ = glm::vec3(0.0f);
 };

@@ -14,7 +14,6 @@
 #include <exception>
 #include <iostream>
 #include <stdexcept>
-#include <vector>
 
 void errorGLFW(int codigo, const char* mensaje)
 {
@@ -42,7 +41,7 @@ int main()
     GLFWwindow* ventana = glfwCreateWindow(
         800,
         600,
-        "Practico 04 - Aeronave",
+        "Practico 04 - Aeronave: cabeceo y rolido",
         nullptr,
         nullptr
     );
@@ -74,12 +73,11 @@ int main()
 
     int resultado = 0;
 
-    // Los recursos se destruyen al salir de este bloque,
-    // antes de cerrar el contexto de OpenGL.
+    // Aircraft y Shader se destruyen con el contexto activo.
     try
     {
         // --------------------------------------------------
-        // Fuentes y programa de shaders.
+        // Recursos y programa de shaders.
         // --------------------------------------------------
 
         ResourceManager recursos("assets");
@@ -100,65 +98,28 @@ int main()
         }
 
         // --------------------------------------------------
-        // Modelo del avion.
+        // Modelo completo.
         // --------------------------------------------------
 
-        const float L = 1.0f;
-
         Aircraft avion;
-        avion.init(L);
+        avion.init(1.0f);
 
-        // Copiamos las descripciones de las piezas.
-        // Las mallas siguen perteneciendo a Aircraft.
-        std::vector<PiezaAvion> piezas(
-            avion.piezas().begin(),
-            avion.piezas().end()
-        );
+        std::cout
+            << "Piezas del avion: "
+            << avion.piezas().size()
+            << '\n';
 
-        // Conservamos el cono adicional de cola de tu main.
-        // Sus medidas y transformacion son las que tenias.
-        const float largoNariz = L / 5.0f;
-        const float largoFuselaje = L;
+        const glm::vec3 referencia = avion.puntoReferencia();
 
-        const float largoCola = L / 5.0f;
-        const float radioCola = L / 10.0f;
+        std::cout
+            << "Referencia local de giro: ("
+            << referencia.x << ", "
+            << referencia.y << ", "
+            << referencia.z << ")\n";
 
-        const float posicionZCola =
-            largoNariz + largoFuselaje * 0.88f;
-
-        glm::mat4 localCola = glm::mat4(1.0f);
-
-        localCola = glm::translate(
-            localCola,
-            glm::vec3(
-                0.0f,
-                0.0f,
-                posicionZCola + largoCola * 0.5f
-            )
-        );
-
-        localCola = glm::rotate(
-            localCola,
-            glm::radians(-90.0f),
-            glm::vec3(1.0f, 0.0f, 0.0f)
-        );
-
-        localCola = glm::scale(
-            localCola,
-            glm::vec3(
-                radioCola,
-                largoCola,
-                radioCola
-            )
-        );
-
-        piezas.push_back(
-            PiezaAvion{
-                TipoMalla::Cono,
-                localCola,
-                glm::vec3(0.5f, 0.5f, 0.5f)
-            }
-        );
+        std::cout
+            << "Prueba: 6 segundos de cabeceo y "
+            << "6 segundos de rolido, en repeticion.\n";
 
         // --------------------------------------------------
         // Uniforms.
@@ -169,12 +130,11 @@ int main()
         const int ubicacionColor = shader.loc("uColor");
 
         // --------------------------------------------------
-        // Presentacion y referencia de movimiento.
+        // Presentacion del conjunto.
         // --------------------------------------------------
 
         const glm::vec3 posicionAvion(0.0f, 0.0f, 0.0f);
 
-        // Conservamos la orientacion que elegiste.
         glm::mat4 presentacion = glm::mat4(1.0f);
 
         presentacion = glm::rotate(
@@ -235,15 +195,45 @@ int main()
                 GL_DEPTH_BUFFER_BIT
             );
 
-            // Cabeceo entre -15 y +15 grados.
-            const float tiempo = static_cast<float>(
-                glfwGetTime() - inicioAnimacion
+            // --------------------------------------------------
+            // Prueba alternada de cabeceo y rolido.
+            // --------------------------------------------------
+
+            const double tiempo =
+                glfwGetTime() - inicioAnimacion;
+
+            const float duracion = 6.0f;
+
+            const float fase = static_cast<float>(
+                std::fmod(tiempo, 12.0)
             );
 
-            const float cabeceo =
-                glm::radians(15.0f) * std::sin(tiempo);
+            float cabeceo = 0.0f;
+            float rolido = 0.0f;
 
-            // Pose = T(posicion) * R(cabeceo) * T(-referencia).
+            if (fase < duracion)
+            {
+                const float avance = fase / duracion;
+
+                cabeceo =
+                    glm::radians(15.0f) *
+                    std::sin(glm::radians(360.0f) * avance);
+            }
+            else
+            {
+                const float avance =
+                    (fase - duracion) / duracion;
+
+                rolido =
+                    glm::radians(25.0f) *
+                    std::sin(glm::radians(360.0f) * avance);
+            }
+
+            // --------------------------------------------------
+            // Pose comun a todas las piezas.
+            // T(posicion) * Rx * Rz * T(-referencia).
+            // --------------------------------------------------
+
             glm::mat4 pose = glm::mat4(1.0f);
 
             pose = glm::translate(
@@ -257,15 +247,24 @@ int main()
                 glm::vec3(1.0f, 0.0f, 0.0f)
             );
 
+            pose = glm::rotate(
+                pose,
+                rolido,
+                glm::vec3(0.0f, 0.0f, 1.0f)
+            );
+
             pose = glm::translate(
                 pose,
-                -avion.puntoReferencia()
+                -referencia
             );
+
+            // --------------------------------------------------
+            // Dibujamos las siete piezas.
+            // --------------------------------------------------
 
             shader.use();
 
-            // Todas las piezas reciben la misma pose.
-            for (const PiezaAvion& pieza : piezas)
+            for (const PiezaAvion& pieza : avion.piezas())
             {
                 const Mesh& malla = avion.malla(pieza.tipo);
 

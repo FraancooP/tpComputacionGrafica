@@ -58,6 +58,7 @@ add_executable(cgyav
     src/Primitives.cpp
     src/Aircraft.cpp
     src/CameraSystem.cpp
+    src/InputHandler.cpp
 )
 
 target_link_libraries(cgyav PRIVATE

@@ -10,6 +10,7 @@
 #include "ResourceManager.h"
 #include "Shader.h"
 #include "CameraSystem.h"
+#include "InputHandler.h"
 
 #include <cmath>
 #include <exception>
@@ -156,6 +157,7 @@ int main()
             &altoInicial);
 
         CameraSystem camara(anchoInicial, altoInicial);
+        InputHandler entrada;
 
         // Asociamos la camara a la ventana para acceder desde el callback.
         glfwSetWindowUserPointer(ventana, &camara);
@@ -174,6 +176,7 @@ int main()
         glClearColor(0.10f, 0.12f, 0.16f, 1.0f);
 
         const double inicioAnimacion = glfwGetTime();
+        const bool animarAvion = false;
 
         // --------------------------------------------------
         // Ciclo de dibujo.
@@ -188,6 +191,8 @@ int main()
                 glfwSetWindowShouldClose(ventana, GLFW_TRUE);
             }
 
+            const CameraCommand comando = entrada.update(ventana);
+
             int ancho = 0;
             int alto = 0;
 
@@ -197,9 +202,6 @@ int main()
             {
                 continue;
             }
-
-            // Por ahora no hay entrada del mouse: todos los deltas son cero.
-            const CameraCommand comando{};
 
             camara.update(
                 posicionAvion,
@@ -251,6 +253,11 @@ int main()
                 rolido =
                     glm::radians(25.0f) *
                     std::sin(glm::radians(360.0f) * avance);
+            }
+            if (!animarAvion)
+            {
+                cabeceo = 0.0f;
+                rolido = 0.0f;
             }
 
             // --------------------------------------------------
@@ -313,7 +320,7 @@ int main()
         std::cerr << error.what() << '\n';
         resultado = 1;
     }
-    
+
     glfwSetFramebufferSizeCallback(ventana, nullptr);
     glfwSetWindowUserPointer(ventana, nullptr);
 

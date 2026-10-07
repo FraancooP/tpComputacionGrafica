@@ -10,7 +10,17 @@ class InputHandler
 {
 public:
     // Consultar una vez por cuadro, despues de glfwPollEvents().
-    CameraCommand update(GLFWwindow *ventana);
+    // Actualiza teclado y mouse una vez por cuadro.
+    void update(GLFWwindow *ventana, float dt);
+
+    // Devuelve el comando de camara calculado en update().
+    CameraCommand camera_cmd() const
+    {
+        return comandoCamara_;
+    }
+
+    // Obtiene los limites de deflexion del modelo del profesor.
+    void set_limits(const dlfdm::AircraftParameters &parametros);
     void set_controls(const dlfdm::ControlInputs &controles)
     {
         controles_ = controles;
@@ -22,6 +32,19 @@ public:
     }
 
 private:
+    // Reutiliza el procesamiento de mouse que ya teniamos.
+    CameraCommand leerCamara(GLFWwindow *ventana);
+
+    CameraCommand comandoCamara_{};
+
+    // Limites expresados en radianes.
+    float minimoElevador_ = 0.0f;
+    float maximoElevador_ = 0.0f;
+
+    float minimoAleron_ = 0.0f;
+    float maximoAleron_ = 0.0f;
+
+    float maximoTimon_ = 0.0f;
     dlfdm::ControlInputs controles_{};
 
     enum class Modo

@@ -6,18 +6,22 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include <dlfdm/fdmsolver.h>
+#include <dlfdm/models/aircraft/jettrainer.h>
+
 #include "Aircraft.h"
 #include "ResourceManager.h"
 #include "Shader.h"
 #include "CameraSystem.h"
 #include "InputHandler.h"
+#include "FlightData.h"
 
-#include <cmath>
+#include <algorithm>
 #include <exception>
 #include <iostream>
 #include <stdexcept>
 
-void errorGLFW(int codigo, const char *mensaje)
+void errorGLFW(int codigo, const char* mensaje)
 {
     std::cerr
         << "Error GLFW "
@@ -26,15 +30,17 @@ void errorGLFW(int codigo, const char *mensaje)
         << mensaje
         << '\n';
 }
+
 void redimensionarFramebuffer(
-    GLFWwindow *ventana,
+    GLFWwindow* ventana,
     int ancho,
     int alto)
 {
     glViewport(0, 0, ancho, alto);
 
-    auto *camara = static_cast<CameraSystem *>(
-        glfwGetWindowUserPointer(ventana));
+    auto* camara = static_cast<CameraSystem*>(
+        glfwGetWindowUserPointer(ventana)
+    );
 
     if (camara != nullptr)
     {
@@ -55,12 +61,13 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow *ventana = glfwCreateWindow(
+    GLFWwindow* ventana = glfwCreateWindow(
         800,
         600,
-        "Practico 04 - Aeronave: cabeceo y rolido",
+        "Practico 06 - Dinamica de vuelo",
         nullptr,
-        nullptr);
+        nullptr
+    );
 
     if (ventana == nullptr)
     {
@@ -89,41 +96,39 @@ int main()
 
     int resultado = 0;
 
-    // Aircraft y Shader se destruyen con el contexto activo.
+    // Los recursos graficos se destruyen con el contexto activo.
     try
     {
-        // --------------------------------------------------
-        // Recursos y programa de shaders.
-        // --------------------------------------------------
+        // 1. Recursos y shaders.
 
         ResourceManager recursos("assets");
         Shader shader;
 
-        const ShaderSource &fuentes =
+        const ShaderSource& fuentes =
             recursos.load_shader_source(
                 "solid",
                 "shaders/solid.vs",
-                "shaders/solid.fs");
+                "shaders/solid.fs"
+            );
 
         if (!shader.compile_from_source(fuentes.vs, fuentes.fs))
         {
             throw std::runtime_error(
-                "No se pudo preparar el programa de shaders.");
+                "No se pudo preparar el programa de shaders."
+            );
         }
 
-        // --------------------------------------------------
-        // Modelo completo.
-        // --------------------------------------------------
+        // 2. Modelo geometrico del avion.
 
         Aircraft avion;
         avion.init(1.0f);
+
+        const glm::vec3 referencia = avion.puntoReferencia();
 
         std::cout
             << "Piezas del avion: "
             << avion.piezas().size()
             << '\n';
-
-        const glm::vec3 referencia = avion.puntoReferencia();
 
         std::cout
             << "Referencia local de giro: ("
@@ -131,67 +136,145 @@ int main()
             << referencia.y << ", "
             << referencia.z << ")\n";
 
-        std::cout
-            << "Prueba: 6 segundos de cabeceo y "
-            << "6 segundos de rolido, en repeticion.\n";
-
-        // --------------------------------------------------
-        // Uniforms.
-        // --------------------------------------------------
+        // 3. Ubicaciones de los uniforms.
 
         const int ubicacionModelo = shader.loc("uModel");
         const int ubicacionVista = shader.loc("uView");
         const int ubicacionProyeccion = shader.loc("uProjection");
         const int ubicacionColor = shader.loc("uColor");
 
-        // Posicion del punto de referencia del avion en el mundo.
-        const glm::vec3 posicionAvion(0.0f, 0.0f, 0.0f);
+        // 4. Camara y entrada.
 
-        // Usamos el tamaño real del framebuffer.
         int anchoInicial = 0;
         int altoInicial = 0;
 
         glfwGetFramebufferSize(
             ventana,
             &anchoInicial,
-            &altoInicial);
+            &altoInicial
+        );
 
         CameraSystem camara(anchoInicial, altoInicial);
         InputHandler entrada;
 
-        // Asociamos la camara a la ventana para acceder desde el callback.
         glfwSetWindowUserPointer(ventana, &camara);
 
         glfwSetFramebufferSizeCallback(
             ventana,
-            redimensionarFramebuffer);
+            redimensionarFramebuffer
+        );
 
-        // Aplicamos tambien el viewport inicial.
         redimensionarFramebuffer(
             ventana,
             anchoInicial,
-            altoInicial);
+            altoInicial
+        );
+
+        // 5. Modelo fisico y condicion inicial.
+
+        constexpr float pasoFdm = 1.0f / 120.0f;
+        const double dt = static_cast<double>(pasoFdm);
+
+        const dlfdm::AircraftParameters parametros =
+            dlfdm::jettrainer::load_model();
+
+        dlfdm::FDMSolver fdm(parametros, pasoFdm);
+
+        const dlfdm::TrimPoint trim =
+            dlfdm::jettrainer::get_trim_condition(
+                dlfdm::jettrainer::TrimCondition::kISA5000TAS150
+            );
+
+        // El equilibrio requiere cargar estado Y mandos.
+        fdm.setState(trim.state);
+        entrada.set_controls(trim.controls);
+
+        std::cout
+            << "FDM iniciado en la condicion de equilibrio del profesor.\n";
+
+        // 6. Configuracion de dibujo.
 
         glEnable(GL_DEPTH_TEST);
         glClearColor(0.10f, 0.12f, 0.16f, 1.0f);
 
-        const double inicioAnimacion = glfwGetTime();
-        const bool animarAvion = false;
+        // 7. Reloj y acumulador.
 
-        // --------------------------------------------------
-        // Ciclo de dibujo.
-        // --------------------------------------------------
+        double antes = glfwGetTime();
+        double acumulador = 0.0;
+        double proximoInforme = antes + 1.0;
+
+        // 8. Bucle principal.
 
         while (!glfwWindowShouldClose(ventana))
         {
             glfwPollEvents();
+
+            const double ahora = glfwGetTime();
+            const double frame_dt = ahora - antes;
+            antes = ahora;
+
+            const double tiempoParaSimular =
+                std::min(frame_dt, 0.25);
+
+            // Entrada: una lectura por cuadro.
 
             if (glfwGetKey(ventana, GLFW_KEY_ESCAPE) == GLFW_PRESS)
             {
                 glfwSetWindowShouldClose(ventana, GLFW_TRUE);
             }
 
+            if (glfwWindowShouldClose(ventana))
+            {
+                break;
+            }
+
             const CameraCommand comando = entrada.update(ventana);
+
+            // Fisica: cero, uno o varios pasos fijos por cuadro.
+
+            acumulador += tiempoParaSimular;
+
+            while (acumulador >= dt)
+            {
+                fdm.update(entrada.controls());
+                acumulador -= dt;
+            }
+
+            // Recuperamos el estado y lo convertimos a la escena.
+
+            const dlfdm::AircraftState& estadoNed = fdm.getState();
+            const FlightData vuelo = to_world(estadoNed);
+
+            const glm::vec3 posicionAvion = vuelo.position;
+
+            // Informe para comprobar el movimiento.
+
+            if (ahora >= proximoInforme)
+            {
+                std::cout
+                    << "Altura: " << vuelo.position.y << " m"
+                    << " | Velocidad: "
+                    << glm::length(estadoNed.body_velocity)
+                    << " m/s"
+                    << " | Posicion: "
+                    << vuelo.position.x << ", "
+                    << vuelo.position.y << ", "
+                    << vuelo.position.z
+                    << '\n';
+
+                proximoInforme = ahora + 1.0;
+            }
+
+            // La camara sigue la posicion calculada por el FDM.
+
+            camara.update(
+                posicionAvion,
+                glm::vec3(vuelo.phi, vuelo.theta, vuelo.psi),
+                comando
+            );
+
+            // Si no hay superficie visible, omitimos el dibujo.
+            // La fisica ya se actualizo antes de llegar a este punto.
 
             int ancho = 0;
             int alto = 0;
@@ -203,105 +286,77 @@ int main()
                 continue;
             }
 
-            camara.update(
-                posicionAvion,
-                glm::vec3(0.0f),
-                comando);
-
-            const CameraData &datosCamara = camara.data();
-
-            shader.set_uniform(
-                ubicacionVista,
-                datosCamara.view);
-
-            shader.set_uniform(
-                ubicacionProyeccion,
-                datosCamara.projection);
-
-            glClear(
-                GL_COLOR_BUFFER_BIT |
-                GL_DEPTH_BUFFER_BIT);
-
-            // --------------------------------------------------
-            // Prueba alternada de cabeceo y rolido.
-            // --------------------------------------------------
-
-            const double tiempo =
-                glfwGetTime() - inicioAnimacion;
-
-            const float duracion = 6.0f;
-
-            const float fase = static_cast<float>(
-                std::fmod(tiempo, 12.0));
-
-            float cabeceo = 0.0f;
-            float rolido = 0.0f;
-
-            if (fase < duracion)
-            {
-                const float avance = fase / duracion;
-
-                cabeceo =
-                    glm::radians(15.0f) *
-                    std::sin(glm::radians(360.0f) * avance);
-            }
-            else
-            {
-                const float avance =
-                    (fase - duracion) / duracion;
-
-                rolido =
-                    glm::radians(25.0f) *
-                    std::sin(glm::radians(360.0f) * avance);
-            }
-            if (!animarAvion)
-            {
-                cabeceo = 0.0f;
-                rolido = 0.0f;
-            }
-
-            // --------------------------------------------------
-            // Pose comun a todas las piezas.
-            // T(posicion) * Rx * Rz * T(-referencia).
-            // --------------------------------------------------
-
-            glm::mat4 pose = glm::mat4(1.0f);
-
-            pose = glm::translate(
-                pose,
-                posicionAvion);
-
-            pose = glm::rotate(
-                pose,
-                cabeceo,
-                glm::vec3(1.0f, 0.0f, 0.0f));
-
-            pose = glm::rotate(
-                pose,
-                rolido,
-                glm::vec3(0.0f, 0.0f, 1.0f));
-
-            pose = glm::translate(
-                pose,
-                -referencia);
-
-            // --------------------------------------------------
-            // Dibujamos las siete piezas.
-            // --------------------------------------------------
+            const CameraData& datosCamara = camara.data();
 
             shader.use();
 
-            for (const PiezaAvion &pieza : avion.piezas())
+            shader.set_uniform(
+                ubicacionVista,
+                datosCamara.view
+            );
+
+            shader.set_uniform(
+                ubicacionProyeccion,
+                datosCamara.projection
+            );
+
+            glClear(
+                GL_COLOR_BUFFER_BIT |
+                GL_DEPTH_BUFFER_BIT
+            );
+
+            // Pose del avion:
+            // T(posicion) * Ry(psi) * Rx(theta) * Rz(phi)
+            // * T(-referencia).
+
+            glm::mat4 pose = glm::translate(
+                glm::mat4(1.0f),
+                posicionAvion
+            );
+
+            // Guinada.
+            pose = glm::rotate(
+                pose,
+                vuelo.psi,
+                glm::vec3(0.0f, 1.0f, 0.0f)
+            );
+
+            // Cabeceo.
+            pose = glm::rotate(
+                pose,
+                vuelo.theta,
+                glm::vec3(1.0f, 0.0f, 0.0f)
+            );
+
+            // Alabeo.
+            pose = glm::rotate(
+                pose,
+                vuelo.phi,
+                glm::vec3(0.0f, 0.0f, 1.0f)
+            );
+
+            // El punto de referencia del modelo coincide
+            // con la posicion entregada por el FDM.
+            pose = glm::translate(
+                pose,
+                -referencia
+            );
+
+            // Dibujamos las piezas con la pose comun.
+
+            for (const PiezaAvion& pieza : avion.piezas())
             {
-                const Mesh &malla = avion.malla(pieza.tipo);
+                const Mesh& malla = avion.malla(pieza.tipo);
 
                 shader.set_uniform(
                     ubicacionModelo,
-                    pose * pieza.local);
+                    pose * pieza.local
+                );
 
                 shader.set_uniform(
                     ubicacionColor,
-                    pieza.color);
+                    pieza.color
+                );
 
                 glBindVertexArray(malla.vao());
 
@@ -309,13 +364,14 @@ int main()
                     GL_TRIANGLES,
                     malla.count(),
                     GL_UNSIGNED_INT,
-                    nullptr);
+                    nullptr
+                );
             }
 
             glfwSwapBuffers(ventana);
         }
     }
-    catch (const std::exception &error)
+    catch (const std::exception& error)
     {
         std::cerr << error.what() << '\n';
         resultado = 1;

@@ -39,6 +39,30 @@ FetchContent_Declare(
 )
 
 FetchContent_MakeAvailable(glm)
+# Modelo de dinamica de vuelo proporcionado por el profe
+add_library(dlfdm STATIC
+    libs/dlfdm/src/dlfdm/aerodynamicsmodel.cpp
+    libs/dlfdm/src/dlfdm/aircraftdynamics.cpp
+    libs/dlfdm/src/dlfdm/fdmsolver.cpp
+    libs/dlfdm/src/dlfdm/propulsionmodel.cpp
+    libs/dlfdm/src/dlfdm/models/aircraft/jettrainer.cpp
+    libs/dlfdm/src/dlfdm/models/propulsion/turbofan.cpp
+    libs/dlfdm/src/dlfdm/models/propulsion/turbojet.cpp
+)
+
+target_include_directories(dlfdm PUBLIC
+    "${CMAKE_CURRENT_SOURCE_DIR}/libs/dlfdm/include"
+)
+
+target_link_libraries(dlfdm PUBLIC glm::glm)
+
+target_compile_features(dlfdm PUBLIC cxx_std_17)
+
+if(MSVC)
+    target_compile_options(dlfdm PRIVATE /utf-8)
+endif()
+
+
 
 # GLAD: cargador de funciones OpenGL.
 add_library(glad STATIC
@@ -65,6 +89,7 @@ target_link_libraries(cgyav PRIVATE
     glad
     glfw
     glm::glm
+    dlfdm
 )
 
 # Advertencias del compilador.
@@ -72,4 +97,19 @@ if(MSVC)
     target_compile_options(cgyav PRIVATE /W4 /utf-8)
 else()
     target_compile_options(cgyav PRIVATE -Wall -Wextra -Wpedantic)
+endif()
+
+
+
+
+
+# Prueba independiente incluida por el modelo propuesto
+add_executable(dlfdm-test EXCLUDE_FROM_ALL
+    libs/dlfdm/test/main.cpp
+)
+
+target_link_libraries(dlfdm-test PRIVATE dlfdm)
+
+if(MSVC)
+    target_compile_options(dlfdm-test PRIVATE /utf-8)
 endif()

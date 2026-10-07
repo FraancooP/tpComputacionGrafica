@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CameraCommand.h"
+#include <dlfdm/defines.h>
 
 // Declaracion adelantada: el encabezado solo necesita el puntero.
 struct GLFWwindow;
@@ -9,9 +10,20 @@ class InputHandler
 {
 public:
     // Consultar una vez por cuadro, despues de glfwPollEvents().
-    CameraCommand update(GLFWwindow* ventana);
+    CameraCommand update(GLFWwindow *ventana);
+    void set_controls(const dlfdm::ControlInputs &controles)
+    {
+        controles_ = controles;
+    }
+
+    const dlfdm::ControlInputs &controls() const
+    {
+        return controles_;
+    }
 
 private:
+    dlfdm::ControlInputs controles_{};
+
     enum class Modo
     {
         Ninguno,

@@ -21,6 +21,12 @@
 #include <iostream>
 #include <stdexcept>
 
+struct ContextoVentana
+{
+    CameraSystem *camara = nullptr;
+    bool modoAlambrico = false;
+};
+
 void errorGLFW(int codigo, const char *mensaje)
 {
     std::cerr
@@ -38,12 +44,49 @@ void redimensionarFramebuffer(
 {
     glViewport(0, 0, ancho, alto);
 
-    auto *camara = static_cast<CameraSystem *>(
+    auto *contexto = static_cast<ContextoVentana *>(
         glfwGetWindowUserPointer(ventana));
 
-    if (camara != nullptr)
+    if (contexto != nullptr && contexto->camara != nullptr)
     {
-        camara->set_viewport(ancho, alto);
+        contexto->camara->set_viewport(ancho, alto);
+    }
+}
+
+void procesarTecla(
+    GLFWwindow *ventana,
+    int tecla,
+    int scancode,
+    int accion,
+    int modificadores)
+{
+    // Estos datos no hacen falta para esta accion.
+    (void)scancode;
+    (void)modificadores;
+
+    // Solo reaccionamos a la pulsacion inicial.
+    // Ignoramos la repeticion y la liberacion de la tecla.
+    if (accion != GLFW_PRESS)
+    {
+        return;
+    }
+
+    auto *contexto = static_cast<ContextoVentana *>(
+        glfwGetWindowUserPointer(ventana));
+
+    if (contexto == nullptr)
+    {
+        return;
+    }
+
+    if (tecla == GLFW_KEY_F1)
+    {
+        contexto->modoAlambrico = !contexto->modoAlambrico;
+
+        std::cout
+            << "Modo de dibujo: "
+            << (contexto->modoAlambrico ? "alambrico" : "solido")
+            << '\n';
     }
 }
 
@@ -152,11 +195,15 @@ int main()
         CameraSystem camara(anchoInicial, altoInicial);
         InputHandler entrada;
 
-        glfwSetWindowUserPointer(ventana, &camara);
+        ContextoVentana contexto;
+        contexto.camara = &camara;
+
+        glfwSetWindowUserPointer(ventana, &contexto);
 
         glfwSetFramebufferSizeCallback(
             ventana,
             redimensionarFramebuffer);
+        glfwSetKeyCallback(ventana, procesarTecla);
 
         redimensionarFramebuffer(
             ventana,
@@ -295,6 +342,9 @@ int main()
                 ubicacionProyeccion,
                 datosCamara.projection);
 
+            glPolygonMode(
+                GL_FRONT_AND_BACK,
+                contexto.modoAlambrico ? GL_LINE : GL_FILL);
             glClear(
                 GL_COLOR_BUFFER_BIT |
                 GL_DEPTH_BUFFER_BIT);
@@ -363,6 +413,7 @@ int main()
         resultado = 1;
     }
 
+    glfwSetKeyCallback(ventana, nullptr);
     glfwSetFramebufferSizeCallback(ventana, nullptr);
     glfwSetWindowUserPointer(ventana, nullptr);
 
